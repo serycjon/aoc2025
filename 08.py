@@ -15,6 +15,7 @@ distances = [(dist(inp[i_a], inp[i_b]), (i_a, i_b))
 distances = [x for x in distances if x[0] != 0]
 distances = sorted(distances)
 
+# poor-mans union-find without bothering to try to remember or to look up how it is done properly :D
 circuits = [i for i in range(len(inp))]
 
 def root(a, circuits):
