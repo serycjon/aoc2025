@@ -1,6 +1,7 @@
 from copy import deepcopy
 from collections import deque
-import heapq
+import numpy as np
+import pulp
 
 import tqdm
 
@@ -60,32 +61,27 @@ for line in tqdm.tqdm(lines):
     buttons = [tuple(int(x) for x in button.strip('()').split(','))
                for button in buttons]
 
-    start = tuple(0 for _ in target_state)
-    visited = {start: 0}
-    # came_from = {}
+    N_buttons = len(buttons)
+    N_lights = len(target_state)
+    A = np.zeros((N_lights, N_buttons), dtype=np.int32)
+    for i, button in enumerate(buttons):
+        A[button, i] = 1
+    b = np.array(target_state)
 
-    q = []
-    heapq.heappush(q, (diff(start, target_state), start, 0))
+    # print(f"{A=}")
+    # print(f"{b=}")
 
-    # iteration = 0
-    while len(q) > 0:
-        # iteration += 1
-        # if iteration > 20:
-        #     break
-        score, cur_state, presses = heapq.heappop(q)
-        # print(score, cur_state, presses)
-        # print(f'{state_repr(cur_state)} -- {state_repr(target_state)}')
-        if cur_state == target_state:
-            part2 += presses
-            break
+    prob = pulp.LpProblem("ILP", pulp.LpMinimize)
+    x = pulp.LpVariable.dicts("x", range(N_buttons), lowBound=0, cat="Integer")
 
-        for button in buttons:
-            new_state = press2(button, cur_state)
-            new_cost = presses + 1
-            if new_state not in visited or visited[new_state] > new_cost:
-                visited[new_state] = new_cost
-                new_score = new_cost + diff(new_state, target_state)
-                heapq.heappush(q, (new_score, new_state, new_cost))
-                # came_from[new_state] = (cur_state, button)
-    
+    prob += pulp.lpSum([x[i] for i in range(N_buttons)])
+    for j in range(N_lights):
+        prob += pulp.lpSum(A[j, i] * x[i] for i in range(N_buttons)) == b[j]
+    # prob.solve()
+    prob.solve(pulp.PULP_CBC_CMD(msg=False))
+    # print("Status:", pulp.LpStatus[prob.status])
+    # for i in range(N_buttons):
+    #     print(f"x[{i}] =", x[i].value())
+
+    part2 += pulp.value(prob.objective)
 print(part2)
