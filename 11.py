@@ -1,6 +1,5 @@
 from collections import deque
 import networkx as nx
-import tqdm
 
 input = {line.split(':')[0]: line.split(':')[1].strip().split() for line in open('inputs/11', 'r').readlines()}
 # input = {line.split(':')[0]: line.split(':')[1].strip().split() for line in open('inputs/11_example', 'r').readlines()}
@@ -75,14 +74,24 @@ def find_paths(graph, src, dst, topo):
                 q.append((neigh, new_path))
     return count
 
+def find_paths_2(graph, src, dst, topo):
+    # DP
+    nodes = sorted(list(graph.keys()), key=lambda x: topo[x])
+    dp = {node: 1 if node == src else 0
+          for node in nodes + ['out']}
+    for parent in nodes:
+        for child in graph.get(parent, []):
+            dp[child] += dp[parent]
+    return dp[dst]
+
 targets = ['svr', 'dac', 'fft', 'out']
 targets = sorted(targets, key=lambda x: topo[x])
 
-counts = 1
-for i in tqdm.trange(len(targets) - 1):
+part2 = 1
+for i in range(len(targets) - 1):
     src = targets[i]
     dst = targets[i + 1]
-    count = find_paths(input, src, dst, topo)
-    counts *= count
+    count = find_paths_2(input, src, dst, topo)
+    part2 *= count
 
-print(counts)
+print(part2)
